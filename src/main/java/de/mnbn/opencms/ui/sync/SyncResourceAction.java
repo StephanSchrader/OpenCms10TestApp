@@ -1,6 +1,5 @@
 package de.mnbn.opencms.ui.sync;
 
-import com.vaadin.ui.Notification;
 import org.apache.commons.logging.Log;
 import org.opencms.file.CmsObject;
 import org.opencms.file.CmsResource;
@@ -20,10 +19,10 @@ public class SyncResourceAction extends A_CmsWorkplaceAction {
 
     public void executeAction(I_CmsDialogContext context) {
         try {
-            new SyncCommand(context.getCms()).call();
+            new SyncCommand(context.getCms()).resources(context.getResources()).call();
         } catch (Exception e) {
             LOG.error("Sync failed", e);
-            Notification.show("Sync failed: '" + e.getMessage() + "'", Notification.Type.ERROR_MESSAGE);
+            context.error(e);
         }
     }
 

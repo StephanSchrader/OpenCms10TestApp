@@ -3,6 +3,7 @@ package de.mnbn.opencms.ui.sync;
 import org.opencms.file.CmsObject;
 import org.opencms.file.CmsResource;
 
+import java.util.List;
 import java.util.concurrent.Callable;
 
 /**
@@ -10,7 +11,7 @@ import java.util.concurrent.Callable;
  */
 public class SyncCommand implements Callable<Void> {
 
-    private CmsResource resource;
+    private List<CmsResource> resources;
 
     private CmsObject cms;
 
@@ -23,4 +24,8 @@ public class SyncCommand implements Callable<Void> {
         return null;
     }
 
+    public SyncCommand resources(List<CmsResource> resources) {
+        this.resources = resources;
+        return this;
+    }
 }
