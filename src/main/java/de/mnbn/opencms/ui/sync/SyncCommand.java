@@ -46,12 +46,20 @@ public class SyncCommand implements Callable<Void> {
         String name = Objects.requireNonNull(command.name(), "command");
         String rawScriptCall = Objects.requireNonNull(properties.getString(name), "command from properties");
 
-        String scriptCall = String.format(rawScriptCall, getBrand(), site);
+        String scriptCall = String.format(rawScriptCall, getBrand(), getSite());
         LOG.info("Trying to execute script: '" + scriptCall + "', startedBy: " + cms.getRequestContext().getCurrentUser());
 
         Runtime.getRuntime().exec(scriptCall);
 
         return null;
+    }
+
+    private String getSite() {
+        if (site == null || site.isEmpty() || site.equals("/")) {
+            return "";
+        }
+
+        return CmsResource.getName(site);
     }
 
     private String getBrand() {
