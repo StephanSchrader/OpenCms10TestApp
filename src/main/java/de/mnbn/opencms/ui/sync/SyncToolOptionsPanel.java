@@ -111,6 +111,8 @@ public class SyncToolOptionsPanel extends VerticalLayout {
                     .call();
 
             Notification.show("Sync gestartet", Notification.Type.HUMANIZED_MESSAGE);
+        } catch (SyncNotPermittedException e) {
+            Notification.show("Sie haben keine Berechtigung die Site '" + site + "' zu synchronisieren!", Notification.Type.ERROR_MESSAGE);
         } catch (Exception e) {
             LOG.error("Sync failed", e);
             Notification.show("Sync failed: '" + e.getMessage() + "'", Notification.Type.ERROR_MESSAGE);

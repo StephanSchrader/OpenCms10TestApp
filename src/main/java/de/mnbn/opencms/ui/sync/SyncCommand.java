@@ -2,12 +2,15 @@ package de.mnbn.opencms.ui.sync;
 
 import org.apache.commons.collections.ExtendedProperties;
 import org.apache.commons.logging.Log;
+import org.opencms.file.CmsGroup;
 import org.opencms.file.CmsObject;
 import org.opencms.file.CmsProperty;
 import org.opencms.file.CmsResource;
 import org.opencms.main.CmsException;
 import org.opencms.main.CmsLog;
 import org.opencms.main.OpenCms;
+import org.opencms.security.CmsRole;
+import org.opencms.ui.A_CmsUI;
 
 import java.io.IOException;
 import java.util.List;
@@ -43,6 +46,10 @@ public class SyncCommand implements Callable<Void> {
     }
 
     public Void call() throws Exception {
+        if (!isAllowedToSyncSite()) {
+            throw new SyncNotPermittedException();
+        }
+
         String name = Objects.requireNonNull(command.name(), "command");
         String rawScriptCall = Objects.requireNonNull(properties.getString(name), "command from properties");
 
@@ -78,6 +85,25 @@ public class SyncCommand implements Callable<Void> {
         return brand;
     }
 
+
+    private boolean isAllowedToSyncSite() {
+        CmsObject cms = A_CmsUI.getCmsObject();
+        if (OpenCms.getRoleManager().hasRole(cms, CmsRole.ROOT_ADMIN)) {
+            // der Root Admin darf immer alles, wirklich immer und alles!
+            return true;
+        }
+
+        boolean isAllowed = false;
+
+        String brand = getBrand();
+        String syncGroup = properties.getString("brand." + brand + ".syncGroup");
+        if (syncGroup != null) {
+            isAllowed = isInGroup(cms, syncGroup);
+        }
+
+        return isAllowed;
+    }
+
     public SyncCommand command(SyncCommandKey command) {
         this.command = Objects.requireNonNull(command, "command");
         return this;
@@ -91,5 +117,21 @@ public class SyncCommand implements Callable<Void> {
     public SyncCommand site(String site) {
         this.site = site;
         return this;
+    }
+
+    private static boolean isInGroup(CmsObject cms, String group) {
+        try {
+            List<CmsGroup> groups = cms.getGroupsOfUser(cms.getRequestContext().getCurrentUser().getName(), true);
+            for (CmsGroup cmsGroup : groups) {
+                if (group.equals(cmsGroup.getSimpleName())) {
+                    return true;
+                }
+            }
+
+        } catch (CmsException e) {
+            throw new RuntimeException(e);
+        }
+
+        return false;
     }
 }
