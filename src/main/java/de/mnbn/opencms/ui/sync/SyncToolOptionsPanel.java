@@ -1,7 +1,6 @@
 package de.mnbn.opencms.ui.sync;
 
 import com.vaadin.data.Property;
-import com.vaadin.data.util.AbstractProperty;
 import com.vaadin.shared.ui.combobox.FilteringMode;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.Button.ClickEvent;
@@ -15,6 +14,7 @@ import org.apache.commons.logging.Log;
 import org.opencms.file.CmsObject;
 import org.opencms.file.CmsUser;
 import org.opencms.main.CmsLog;
+import org.opencms.main.OpenCms;
 import org.opencms.ui.A_CmsUI;
 import org.opencms.ui.CmsVaadinUtils;
 
@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Date;
+import java.util.concurrent.TimeUnit;
 
 
 public class SyncToolOptionsPanel extends VerticalLayout {
@@ -81,21 +81,19 @@ public class SyncToolOptionsPanel extends VerticalLayout {
 
         siteSelector = createSiteSelect(A_CmsUI.getCmsObject());
 
-        outputPanel.setVisible(syncStatus.isRunning());
-        logOutput.setPropertyDataSource(createLogData());
         logOutput.addAttachListener(new AttachListener() {
             public void attach(AttachEvent event) {
                 logOutput.getUI().setPollInterval(1000);
             }
         });
 
-        /*
         OpenCms.getExecutor().scheduleWithFixedDelay(new Runnable() {
             public void run() {
-                logOutput.valueChange(new Label.ValueChangeEvent(logOutput));
+                if (Files.exists(syncStatus.getLogFile())) {
+                    logOutput.setValue(readLogContent(syncStatus.getLogFile()).toString());
+                }
             }
-        }, 500, 500, TimeUnit.MILLISECONDS);
-        */
+        }, 1000, 1000, TimeUnit.MILLISECONDS);
 
         if (syncStatus.isRunning()) {
             Notification.show("Sync wird ausgeführt", "Es wird aktuell ein Sync ausgeführt, bitte warten Sie!",
@@ -138,27 +136,6 @@ public class SyncToolOptionsPanel extends VerticalLayout {
         });
 
         return siteSelector;
-    }
-
-    private Property<String> createLogData() {
-        return new AbstractProperty<String>() {
-            public String getValue() {
-                CharSequence logContent = "";
-                if (Files.exists(syncStatus.getLogFile())) {
-                    logContent = readLogContent(syncStatus.getLogFile());
-                }
-
-                return logContent.toString();
-            }
-
-            public void setValue(String newValue) throws ReadOnlyException {
-                throw new ReadOnlyException();
-            }
-
-            public Class<? extends String> getType() {
-                return String.class;
-            }
-        };
     }
 
     private CharSequence readLogContent(Path logFile) {
