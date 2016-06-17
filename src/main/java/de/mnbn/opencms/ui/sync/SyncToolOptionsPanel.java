@@ -106,7 +106,6 @@ public class SyncToolOptionsPanel extends VerticalLayout {
     private void sync(SyncCommandKey key) {
         try {
             outputPanel.setVisible(true);
-            logOutput.setValue(logOutput.getValue() + "" + new Date().toString() + "<br />");
 
             new SyncCommand(A_CmsUI.getCmsObject())
                     .site(site)
