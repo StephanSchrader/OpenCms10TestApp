@@ -17,9 +17,18 @@ public class SyncResourceAction extends A_CmsWorkplaceAction {
 
     private static final Log LOG = CmsLog.getLog(SyncResourceAction.class);
 
+    private SyncCommandKey command;
+
+    public SyncResourceAction(SyncCommandKey command) {
+        this.command = command;
+    }
+
     public void executeAction(I_CmsDialogContext context) {
         try {
-            new SyncCommand(context.getCms()).resources(context.getResources()).call();
+            new SyncCommand(context.getCms())
+                    .command(SyncCommandKey.SYNC_PREVIEW)
+                    .resources(context.getResources())
+                    .call();
         } catch (Exception e) {
             LOG.error("Sync failed", e);
             context.error(e);
@@ -31,7 +40,7 @@ public class SyncResourceAction extends A_CmsWorkplaceAction {
     }
 
     public String getTitle() {
-        return "Sync";
+        return "Sync - " + command;
     }
 
     public CmsMenuItemVisibilityMode getVisibility(CmsObject cms, List<CmsResource> resources) {
