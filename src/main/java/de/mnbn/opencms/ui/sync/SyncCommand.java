@@ -3,8 +3,11 @@ package de.mnbn.opencms.ui.sync;
 import org.apache.commons.collections.ExtendedProperties;
 import org.apache.commons.logging.Log;
 import org.opencms.file.CmsObject;
+import org.opencms.file.CmsProperty;
 import org.opencms.file.CmsResource;
+import org.opencms.main.CmsException;
 import org.opencms.main.CmsLog;
+import org.opencms.main.OpenCms;
 
 import java.io.IOException;
 import java.util.List;
@@ -43,15 +46,28 @@ public class SyncCommand implements Callable<Void> {
         String name = Objects.requireNonNull(command.name(), "command");
         String rawScriptCall = Objects.requireNonNull(properties.getString(name), "command from properties");
 
-        String scriptCall = String.format(rawScriptCall, site);
+        String scriptCall = String.format(rawScriptCall, getBrand(), site);
+        LOG.info("Trying to execute script: '" + scriptCall + "', startedBy: " + cms.getRequestContext().getCurrentUser());
 
-        Process process = Runtime.getRuntime().exec(scriptCall);
-        //process.waitFor();
-
-        //LOG.info("Executed command '" + command + "', return value: '" + process.exitValue() + "'");
-        LOG.info("Executed command '" + command);
+        Runtime.getRuntime().exec(scriptCall);
 
         return null;
+    }
+
+    private String getBrand() {
+        String brand;
+
+        try {
+            CmsObject cmsObject = OpenCms.initCmsObject(cms);
+            cmsObject.getRequestContext().setSiteRoot(site);
+
+            CmsProperty brandProperty = cmsObject.readPropertyObject("/", "brand", false);
+            brand = brandProperty.getValue("unknown");
+        } catch (CmsException e) {
+            throw new RuntimeException(e);
+        }
+
+        return brand;
     }
 
     public SyncCommand command(SyncCommandKey command) {

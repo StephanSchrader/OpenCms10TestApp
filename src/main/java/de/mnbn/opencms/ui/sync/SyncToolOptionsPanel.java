@@ -1,6 +1,7 @@
 package de.mnbn.opencms.ui.sync;
 
 import com.vaadin.data.Property;
+import com.vaadin.data.util.AbstractProperty;
 import com.vaadin.shared.ui.combobox.FilteringMode;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.Button.ClickEvent;
@@ -8,6 +9,7 @@ import com.vaadin.ui.Button.ClickListener;
 import com.vaadin.ui.ComboBox;
 import com.vaadin.ui.Label;
 import com.vaadin.ui.Notification;
+import com.vaadin.ui.Panel;
 import com.vaadin.ui.VerticalLayout;
 import org.apache.commons.logging.Log;
 import org.opencms.file.CmsObject;
@@ -16,6 +18,13 @@ import org.opencms.main.CmsLog;
 import org.opencms.ui.A_CmsUI;
 import org.opencms.ui.CmsVaadinUtils;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Date;
+
 
 public class SyncToolOptionsPanel extends VerticalLayout {
 
@@ -23,14 +32,18 @@ public class SyncToolOptionsPanel extends VerticalLayout {
 
     public static final String PROPERTY_SITE_CAPTION = "caption";
 
+    private SyncStatus syncStatus = new SyncStatus();
+
     private CmsUser m_user;
 
     private Button cancelButton;
     private Button syncLiveButton;
     private Button syncPreviewButton;
 
-    //private Panel outputPanel;
+    private Panel outputPanel;
     private Label logOutput;
+
+    private Property<String> logData;
 
     private ComboBox siteSelector;
 
@@ -68,19 +81,33 @@ public class SyncToolOptionsPanel extends VerticalLayout {
 
         siteSelector = createSiteSelect(A_CmsUI.getCmsObject());
 
-        //outputPanel.getUI().setVisible(true);
+        outputPanel.setVisible(syncStatus.isRunning());
+        logOutput.setPropertyDataSource(createLogData());
         logOutput.addAttachListener(new AttachListener() {
             public void attach(AttachEvent event) {
-                event.getConnector().getUI().setPollInterval(250);
+                logOutput.getUI().setPollInterval(1000);
             }
         });
 
-        //LogRunnable logRunnable = new LogRunnable("/tmp/the-big-logfile.log", logOutput);
-        //new Thread(logRunnable).start();
+        /*
+        OpenCms.getExecutor().scheduleWithFixedDelay(new Runnable() {
+            public void run() {
+                logOutput.valueChange(new Label.ValueChangeEvent(logOutput));
+            }
+        }, 500, 500, TimeUnit.MILLISECONDS);
+        */
+
+        if (syncStatus.isRunning()) {
+            Notification.show("Sync wird ausgeführt", "Es wird aktuell ein Sync ausgeführt, bitte warten Sie!",
+                    Notification.Type.WARNING_MESSAGE);
+        }
     }
 
     private void sync(SyncCommandKey key) {
         try {
+            outputPanel.setVisible(true);
+            logOutput.setValue(logOutput.getValue() + "" + new Date().toString() + "<br />");
+
             new SyncCommand(A_CmsUI.getCmsObject())
                     .site(site)
                     .command(key)
@@ -96,8 +123,8 @@ public class SyncToolOptionsPanel extends VerticalLayout {
     private ComboBox createSiteSelect(CmsObject cms) {
 
         siteSelector.setContainerDataSource(CmsVaadinUtils.getAvailableSitesContainer(cms, PROPERTY_SITE_CAPTION));
-        String siteRoot = cms.getRequestContext().getSiteRoot();
-        siteSelector.setValue(siteRoot);
+        site = cms.getRequestContext().getSiteRoot();
+        siteSelector.setValue(site);
         siteSelector.setNullSelectionAllowed(false);
         siteSelector.setItemCaptionPropertyId(PROPERTY_SITE_CAPTION);
         siteSelector.setFilteringMode(FilteringMode.CONTAINS);
@@ -112,6 +139,42 @@ public class SyncToolOptionsPanel extends VerticalLayout {
         });
 
         return siteSelector;
+    }
+
+    private Property<String> createLogData() {
+        return new AbstractProperty<String>() {
+            public String getValue() {
+                CharSequence logContent = "";
+                if (Files.exists(syncStatus.getLogFile())) {
+                    logContent = readLogContent(syncStatus.getLogFile());
+                }
+
+                return logContent.toString();
+            }
+
+            public void setValue(String newValue) throws ReadOnlyException {
+                throw new ReadOnlyException();
+            }
+
+            public Class<? extends String> getType() {
+                return String.class;
+            }
+        };
+    }
+
+    private CharSequence readLogContent(Path logFile) {
+        try {
+            BufferedReader reader = Files.newBufferedReader(logFile, Charset.defaultCharset());
+            StringBuilder content = new StringBuilder();
+            String line = null;
+            while ((line = reader.readLine()) != null) {
+                content.append(line).append("<br />");
+            }
+
+            return content;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 }

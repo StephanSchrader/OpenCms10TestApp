@@ -34,7 +34,7 @@ public class SyncAppConfiguration extends A_CmsWorkplaceAppConfiguration {
     }
 
     public Resource getIcon() {
-        return new ExternalResource(OpenCmsTheme.getImageLink("apps/git.png"));
+        return new ExternalResource(OpenCmsTheme.getImageLink("apps/sync-icon.png"));
     }
 
     public String getId() {
