@@ -17,6 +17,8 @@ import org.opencms.main.CmsLog;
 import org.opencms.main.OpenCms;
 import org.opencms.ui.A_CmsUI;
 import org.opencms.ui.CmsVaadinUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -28,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 
 public class SyncToolOptionsPanel extends VerticalLayout {
 
-    private static final Log LOG = CmsLog.getLog(SyncToolOptionsPanel.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SyncToolOptionsPanel.class);
 
     public static final String PROPERTY_SITE_CAPTION = "caption";
 
@@ -113,6 +115,7 @@ public class SyncToolOptionsPanel extends VerticalLayout {
             Notification.show("Sync gestartet", Notification.Type.HUMANIZED_MESSAGE);
         } catch (SyncNotPermittedException e) {
             Notification.show("Sie haben keine Berechtigung die Site '" + site + "' zu synchronisieren!", Notification.Type.ERROR_MESSAGE);
+            LOG.info("Sync not permitted for: {}", m_user.getName(), e);
         } catch (Exception e) {
             LOG.error("Sync failed", e);
             Notification.show("Sync failed: '" + e.getMessage() + "'", Notification.Type.ERROR_MESSAGE);
@@ -141,6 +144,7 @@ public class SyncToolOptionsPanel extends VerticalLayout {
     }
 
     private CharSequence readLogContent(Path logFile) {
+        LOG.debug("Reading log file content from: '{}'", logFile);
         try {
             BufferedReader reader = Files.newBufferedReader(logFile, Charset.defaultCharset());
             StringBuilder content = new StringBuilder();

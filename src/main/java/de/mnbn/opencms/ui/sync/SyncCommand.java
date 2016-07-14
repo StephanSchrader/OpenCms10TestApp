@@ -1,16 +1,16 @@
 package de.mnbn.opencms.ui.sync;
 
 import org.apache.commons.collections.ExtendedProperties;
-import org.apache.commons.logging.Log;
 import org.opencms.file.CmsGroup;
 import org.opencms.file.CmsObject;
 import org.opencms.file.CmsProperty;
 import org.opencms.file.CmsResource;
 import org.opencms.main.CmsException;
-import org.opencms.main.CmsLog;
 import org.opencms.main.OpenCms;
 import org.opencms.security.CmsRole;
 import org.opencms.ui.A_CmsUI;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
@@ -22,7 +22,7 @@ import java.util.concurrent.Callable;
  */
 public class SyncCommand implements Callable<Void> {
 
-    private static final Log LOG = CmsLog.getLog(SyncCommand.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SyncCommand.class);
 
     private List<CmsResource> resources;
 
@@ -39,6 +39,8 @@ public class SyncCommand implements Callable<Void> {
 
         try {
             String syncCommandsFile = System.getProperty("sync.commands", "/tmp/sync-commands.properties");
+            LOG.debug("Loading sync commands from: '{}'", syncCommandsFile);
+
             properties = new ExtendedProperties(syncCommandsFile);
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -54,7 +56,7 @@ public class SyncCommand implements Callable<Void> {
         String rawScriptCall = Objects.requireNonNull(properties.getString(name), "command from properties");
 
         String scriptCall = String.format(rawScriptCall, getBrand(), getSite());
-        LOG.info("Trying to execute script: '" + scriptCall + "', startedBy: " + cms.getRequestContext().getCurrentUser());
+        LOG.info("Trying to execute script: '{}', startedBy: {}", scriptCall, cms.getRequestContext().getCurrentUser());
 
         Runtime.getRuntime().exec(scriptCall);
 
@@ -78,6 +80,8 @@ public class SyncCommand implements Callable<Void> {
 
             CmsProperty brandProperty = cmsObject.readPropertyObject("/", "brand", false);
             brand = brandProperty.getValue("unknown");
+
+            LOG.debug("Current brand: '{}', site: '{}'", brand, site);
         } catch (CmsException e) {
             throw new RuntimeException(e);
         }
@@ -100,6 +104,8 @@ public class SyncCommand implements Callable<Void> {
         if (syncGroup != null) {
             isAllowed = isInGroup(cms, syncGroup);
         }
+
+        LOG.debug("User allowed [{}] to sync, needed group: '{}'", cms.getRequestContext().getCurrentUser(), syncGroup);
 
         return isAllowed;
     }

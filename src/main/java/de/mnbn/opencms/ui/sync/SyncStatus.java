@@ -1,8 +1,5 @@
 package de.mnbn.opencms.ui.sync;
 
-import org.apache.commons.logging.Log;
-import org.opencms.main.CmsLog;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -12,11 +9,9 @@ import java.nio.file.Paths;
  */
 public class SyncStatus {
 
-    private static final Log LOG = CmsLog.getLog(SyncStatus.class);
-
     public boolean isRunning() {
         String pid = System.getProperty("sync.pid", "/tmp/sync.pid");
-        return Files.exists(Paths.get(pid));
+        return  Files.exists(Paths.get(pid));
     }
 
     public Path getLogFile() {

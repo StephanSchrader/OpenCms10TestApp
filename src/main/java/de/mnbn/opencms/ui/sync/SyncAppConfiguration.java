@@ -4,6 +4,7 @@ import com.vaadin.server.ExternalResource;
 import com.vaadin.server.Resource;
 import org.opencms.file.CmsGroup;
 import org.opencms.file.CmsObject;
+import org.opencms.file.CmsUser;
 import org.opencms.main.CmsException;
 import org.opencms.main.OpenCms;
 import org.opencms.security.CmsRole;
@@ -12,6 +13,8 @@ import org.opencms.ui.apps.CmsAppVisibilityStatus;
 import org.opencms.ui.apps.I_CmsAppUIContext;
 import org.opencms.ui.apps.I_CmsWorkplaceApp;
 import org.opencms.ui.components.OpenCmsTheme;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -19,6 +22,8 @@ import java.util.List;
  * Created by schrader on 16.06.16.
  */
 public class SyncAppConfiguration extends A_CmsWorkplaceAppConfiguration {
+
+    private static final Logger LOG = LoggerFactory.getLogger(SyncAppConfiguration.class);
 
     @Override
     public String getAppCategory() {
@@ -58,11 +63,19 @@ public class SyncAppConfiguration extends A_CmsWorkplaceAppConfiguration {
         CmsAppVisibilityStatus visibilityStatus = CmsAppVisibilityStatus.INVISIBLE;
         try {
             // alle user, die in einer gruppe sind, die '_sync' endet haben zugriff auf die app
-            List<CmsGroup> groups = cms.getGroupsOfUser(cms.getRequestContext().getCurrentUser().getName(), true);
+            CmsUser currentUser = cms.getRequestContext().getCurrentUser();
+            List<CmsGroup> groups = cms.getGroupsOfUser(currentUser.getName(), true);
             for (CmsGroup group : groups) {
                 if (group.getName().endsWith("_sync")) {
+                    LOG.debug("Access granted, user {} is in '*_sync' group: {}", currentUser.getName(),
+                            group.getName());
                     visibilityStatus = CmsAppVisibilityStatus.ACTIVE;
                 }
+            }
+
+            if (!visibilityStatus.isActive()) {
+                LOG.debug("No access to sync app for user {}, the doesn't belong to a group which ends with: '_sync'",
+                        currentUser.getName());
             }
         } catch (CmsException e) {
             throw new RuntimeException(e);
